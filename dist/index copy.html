@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id=app>{{message}}</div>
+  <script src="vue.js"></script>
+  <script>
+    // debugger;
+    // vue默认支持响应式数据变化： 能监控到数据变化并且能更新视图（单向的）
+    // 响应式数据变化和双向绑定是两个概念
+    // 响应式数据变化 当数据变了视图会更新
+    // 双向绑定是视图会影响数据，数据会影响视图
+    // 双向绑定得需要页面能修改（各种input）
+
+    // vue的模式：并不完全是mvvm，vue默认只是做视图的，渐进式：component vue-router vuex vue-cli
+    // mvvm:只能通过数据更新视图 只能通过视图更新数据
+    // vue2是通过Object.defineProperty 监控数据的，将对象中原有的属性更改成带有get和set的一个属性
+    const vm = new Vue({
+      el: '#app',
+      // data: {
+      //   message: 'hello world'
+      // }
+      data () {
+        console.log(this)
+        return {
+          message: 'hello world',
+          flag: false,
+          form: {
+            name: 'lyp',
+            age: 100
+          },
+          list: [1,2,3,4,5,6,7,8,9,0],
+          rules: {
+            content:[1,2,3],
+            obj: {
+              lyp: 'nidie'
+            }
+          },
+          arr: [
+            {
+              name: 'lyp'
+            },
+            100
+          ]
+        }
+      }
+    });
+    console.log(vm); // 打印会看到data里边的数据在vm下，因为做了代理
+    // debugger;
+    
+    vm.rules.content.push(100)
+    // 什么情况下需要更新
+    // 1.我们把一个普通值改成一个对象时需要再把这个对象观测,下面的操作message设置的新的对象，如果去修改里面的某些值就不会出发更新，所以说当我们去修改一个值的时候
+    // 需要把这个新值再去进行观测
+    // vue2是无法劫持不存在的属性，新增不存在的属性，不会更新视图
+    vm.message = {q: 100};
+    vm.message.q = 200;
+    vm.message.c = 100; // 不会触发更新
+
+    vm.arr[0].name = 'liuyuepeng'
+    vm.arr[1] = 'liuyuepeng' // 不会触发更新因为没有监控数组的索引
+
+    // 下面这种情况也得需要更新，数组的7个方法都会触发更新
+    vm.arr.push({1: 1}, {1: 1});
+    vm.arr[2]['1'] = 100;
+  </script>
+</body>
+</html>
