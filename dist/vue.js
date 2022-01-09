@@ -100,7 +100,7 @@
   // 解析html,会编译成一个对象非常像虚拟DOM但是不是虚拟DOM
 
   function parserHTML(html) {
-    // 构建一个栈，当解析到一个标签的时候就放进去一个，再有下一个标签就是栈里边最后一个的儿子，当解析到结束标签的时候就从栈里边删掉，自闭和标签同理
+    // 构建一个栈，当解析到一个标签的时候就放进去一个，再有下一个标签就是栈里边最后一个的儿子，当解析到结束标签的时候就从栈里边删掉，自闭合标签同理
     let stack = []; // 树根
 
     let root = null;
@@ -249,7 +249,64 @@
 
     let code = generate(ast); // 包装成render函数
 
-    new Function(`with(this){ return ${code}}`);
+    let render = new Function(`with(this){ return ${code}}`);
+    return render;
+  }
+
+  function patch(el, vnode) {
+    // 在这根据虚拟dom生成一个新的el替换掉原来的el(可以去看官网的生命周期图示)
+    console.log(el, vnode);
+    const elm = createElm(vnode);
+    let parent = el.parentNode; // 把新的节点插入到老节点的下一个兄弟元素的前面，如果没有下一个兄弟元素就是null ，就是appendChild
+
+    parent.insertBefore(elm, el.nextSibling); // 删除老的el,更新页面
+
+    parent.removeChild(el);
+    console.log(elm);
+    return elm;
+  }
+
+  function createElm(vnode) {
+    const {
+      tag,
+      data,
+      children,
+      key,
+      text,
+      vm
+    } = vnode; // 在这我们是通过有没有tag来判定是元素还是文本的
+    // 我们让虚拟节点和真实节点做一个映射关系, 后续某个虚拟节点更新了 我可以跟踪到真实节点，并且更新真实节点
+
+    if (typeof tag === 'string') {
+      vnode.el = document.createElement(tag); // 把属性插入到dom上
+
+      updateProperties(vnode.el, data);
+      children.forEach(child => {
+        vnode.el.appendChild(createElm(child));
+      });
+    } else {
+      vnode.el = document.createTextNode(text);
+    }
+
+    return vnode.el;
+  }
+
+  function updateProperties(el, props = {}) {
+    for (let key in props) {
+      el.setAttribute(key, props[key]);
+    }
+  }
+
+  function mountComponent(vm) {
+    vm._update(vm._render());
+  }
+  function lifeCycleMixin(Vue) {
+    // vue的渲染流程都是通过_update完成的
+    Vue.prototype._update = function (vnode) {
+      console.log(vnode);
+      const vm = this;
+      vm.el = patch(vm.$el, vnode);
+    };
   }
 
   function isFunction(data) {
@@ -472,8 +529,10 @@
         }
         let render = compilerToFunction(template);
         vm.$options.render = render;
-      } // console.log(vm.$options.render)
+      } // debugger
 
+
+      mountComponent(vm); // console.log(vm.$options.render)
     };
   }
   // 2.会将用户的选项放到 vm.$options上
@@ -493,6 +552,67 @@
   // 4.diff算法
   // 如果有el 需要挂载到页面上
 
+  function createElement(vm, tag, data = {}, ...children) {
+    // 创建虚拟元素节点
+    // key 是循环的key标识就在属性里, tag: 标签名 data: 属性 children: 子节点， _c的参数
+    return vnode(vm, tag, data, children, data.key, undefined);
+  }
+  function createText(vm, text) {
+    // 创建虚拟文本节点
+    return vnode(vm, undefined, undefined, undefined, undefined, text);
+  } // 因为节点元素跟文本元素返回的东西是不一样的，
+  // 写起来麻烦所以就抽成vnode函数统一返回，不管是元素或者节点控制传参就可以了
+
+  function vnode(vm, tag, data, children, key, text) {
+    return {
+      vm,
+      tag,
+      data,
+      children,
+      key,
+      text
+    };
+  }
+  /**
+   * 返回的vnode跟ast很想像
+   * ast：只是描述语法的根据语法解析出来的,没有用户自己的逻辑
+   * vnode：描述dom结构的，可以自己去扩展属性
+   */
+
+  function renderMixin(Vue) {
+    Vue.prototype._c = function () {
+      // 创建元素节点
+      console.log(arguments);
+      const vm = this;
+      return createElement(vm, ...arguments);
+    };
+
+    Vue.prototype._v = function (text) {
+      // 创建文本节点
+      console.log(arguments);
+      const vm = this;
+      return createText(vm, text);
+    };
+
+    Vue.prototype._s = function (val) {
+      // JSON.stringify
+      // 不论是普通类型还是对象一律都给转成字符串
+      if (isObject(val)) return JSON.stringify(val);
+      return val;
+    };
+
+    Vue.prototype._render = function () {
+      const vm = this;
+      const {
+        render
+      } = vm.$options;
+      console.log(render.toString());
+      const vnode = render.call(vm);
+      console.log(vnode);
+      return vnode;
+    };
+  }
+
   // vue的构造函数导出vue给别人使用, vue的实现方式：原型模式，所有的功能都通过原型扩展的方式来添加
 
   function Vue(options) {
@@ -502,6 +622,8 @@
 
 
   initMixin(Vue);
+  renderMixin(Vue);
+  lifeCycleMixin(Vue);
   /**
    * 1.
    */

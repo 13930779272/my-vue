@@ -1,4 +1,5 @@
 import { compilerToFunction } from "./compiler";
+import { mountComponent } from "./lifecycle";
 import { initState } from "./state";
 
 export function initMixin(Vue) {
@@ -36,7 +37,8 @@ export function initMixin(Vue) {
       let render = compilerToFunction(template);
       vm.$options.render = render;
     }
-
+    // debugger
+    mountComponent(vm)
     // console.log(vm.$options.render)
   }
 };
