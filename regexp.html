@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>regexp</title>
+</head>
+<body>
+  <script>
+    const r = /a/g
+    console.log(r.exec('aaa')); // ['a', index: 0, input: 'aaa', groups: undefined]
+    console.log(r.exec('aaa')); // ['a', index: 1, input: 'aaa', groups: undefined]
+    console.log(r.exec('aaa')); // ['a', index: 2, input: 'aaa', groups: undefined]
+    console.log(r.exec('aaa')); // null
+
+
+    console.log(r.test('aaa')); // true
+    console.log(r.lastIndex); // 1
+    console.log(r.test('aaa')); // true
+    console.log(r.lastIndex); // 2
+    console.log(r.test('aaa')); // true
+    console.log(r.lastIndex); // 3
+    console.log(r.test('aaa')); // false
+    console.log(r.lastIndex); // 0
+
+    console.log(r.test('aaa')); // true
+    console.log(r.lastIndex); // 1
+
+    /**
+     * 因为g全局匹配，所以每匹配一次指针就向后移动一次，直到匹配完成，所以我们在循环里用这个的时候
+     * 需要每次把lastIndex手动置为零才不会出意外情况。
+     */
+
+    const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g  // 匹配{{ xxx }}
+    console.log(defaultTagRE.exec('121 {{ xxx }} 43'));
+  </script>
+</body>
+</html>
